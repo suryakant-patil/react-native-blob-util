@@ -11,15 +11,32 @@
 #include <winrt/windows.web.http.filters.h>
 #include <filesystem>
 #include <sstream> 
+#include <winrt/Windows.Storage.Pickers.h>
+#include <winrt/Windows.Storage.Streams.h>
+#include <winrt/Windows.UI.Popups.h>
+#include <winrt/Windows.UI.Core.h>
+#include <winrt/Windows.UI.Notifications.h>
+#include <winrt/Windows.Security.Authorization.AppCapabilityAccess.h>
+
 
 using namespace winrt;
+using namespace winrt::Windows::System;
 using namespace winrt::Windows::ApplicationModel;
 using namespace winrt::Windows::Storage;
 using namespace winrt::Windows::Storage::Streams;
 using namespace winrt::Windows::Foundation;
+using namespace winrt::Windows::UI::Core;
+using namespace winrt::Windows::UI::Notifications;
+using namespace winrt::Windows::Security::Authorization::AppCapabilityAccess;
 using namespace winrt::Windows::Security::Cryptography;
 using namespace winrt::Windows::Security::Cryptography::Core;
 using namespace std::chrono_literals;
+
+using namespace winrt::Windows::Storage::Pickers;
+using namespace winrt::Windows::UI::Xaml;
+using namespace winrt::Windows::UI::Popups;
+
+
 
 CancellationDisposable::CancellationDisposable(IAsyncInfo const& async, std::function<void()>&& onCancel) noexcept
 	: m_async{ async }
@@ -252,6 +269,119 @@ catch (const hresult_error& ex)
 		promise.Reject(winrt::Microsoft::ReactNative::ReactError{ "EUNSPECIFIED", "EUNSPECIFIED: " + winrt::to_string(ex.message()) +  "; " + path  });
 	}
 }
+
+// checkFileAccessPermissionandInvoke
+winrt::fire_and_forget ReactNativeBlobUtil::checkFileAccessPermissionAndInvoke() noexcept
+try {
+	
+	auto capability = AppCapability::Create(L"broadFileSystemAccess");
+	auto hasAccess = capability.CheckAccess();
+	bool status = false;
+	if (hasAccess != AppCapabilityAccessStatus::Allowed)
+	{
+		m_reactContext.UIDispatcher().Post([&status]()->winrt::fire_and_forget {
+			status = co_await Launcher::LaunchUriAsync(Uri(L"ms-settings:privacy-broadfilesystemaccess"));
+			co_return;
+		});
+		
+	}
+	co_return;
+	
+}
+catch (const hresult_error& ex)
+{
+	
+}
+
+// saveAsFile
+void ReactNativeBlobUtil::saveAsFile(
+	std::string fileName,
+	std::wstring data,
+	std::string encoding,
+	winrt::Microsoft::ReactNative::ReactPromise<int> promise) noexcept
+	try
+{
+	std::string fName{ fileName };
+	std::wstring fdata{ data };
+	m_reactContext.UIDispatcher().Post([promise, fName, fdata]() {
+		std::string namef{ fName };
+		FolderPicker folderPicker;
+		folderPicker.SuggestedStartLocation(PickerLocationId::ComputerFolder);
+		//folderPicker.FileTypeFilter().Append(L"*.jpg");
+		folderPicker.PickSingleFolderAsync().Completed([promise, namef, fdata](IAsyncOperation<StorageFolder> const& asyncOp, AsyncStatus status)
+			{
+				std::wstring ffdata{ fdata };
+				if (status == AsyncStatus::Completed)
+				{
+					StorageFolder folder{ asyncOp.GetResults() };
+					StorageFile destFile{ nullptr };
+					folder.CreateFileAsync(winrt::to_hstring(namef), CreationCollisionOption::ReplaceExisting).Completed([promise, ffdata](IAsyncOperation<StorageFile> const& asyncf, AsyncStatus fstatus) {
+							if (fstatus == AsyncStatus::Completed) {
+								std::wstring ffsdata{ ffdata };
+								StorageFile file{ asyncf.GetResults() };
+								file.OpenAsync(FileAccessMode::ReadWrite).Completed([promise, ffsdata](IAsyncOperation<IRandomAccessStream> const& asyncs, AsyncStatus sstatus) {
+									if(sstatus==AsyncStatus::Completed)
+									{
+										IRandomAccessStream stream{ asyncs.GetResults() };
+										Streams::IBuffer buffer{ Cryptography::CryptographicBuffer::DecodeFromBase64String(ffsdata) };
+										stream.WriteAsync(buffer);
+										promise.Resolve(1);
+									}
+									else
+									{
+										promise.Reject("Failed to save file");
+									}
+									
+								});
+								
+							}
+							else
+							{
+								promise.Reject("Failed to save file");
+							}
+						});
+					
+				}
+				else
+				{
+					promise.Reject("Failed to save file");
+				}
+			
+			
+			});
+
+	});
+	/*Streams::IBuffer buffer;
+	if (encoding.compare("base64") == 0)
+	{
+		buffer = Cryptography::CryptographicBuffer::DecodeFromBase64String(data);
+	}
+	
+	else
+	{
+		auto errorMessage{ "Invalid encoding: " + encoding };
+		promise.Reject(errorMessage.c_str());
+	}
+
+	winrt::hstring destDirectoryPath, destFileName;
+	splitPath(fileName, destDirectoryPath, destFileName);
+	StorageFolder destFolder{ co_await StorageFolder::GetFolderFromPathAsync(destDirectoryPath) };
+	StorageFile destFile{ nullptr };
+	
+	destFile = co_await destFolder.CreateFileAsync(destFileName, CreationCollisionOption::ReplaceExisting);
+	
+	Streams::IRandomAccessStream stream{ co_await destFile.OpenAsync(FileAccessMode::ReadWrite) };
+
+	
+	co_await stream.WriteAsync(buffer);*/
+	//promise.Resolve(1);
+}
+catch (const hresult_error& ex)
+{
+	promise.Reject(winrt::Microsoft::ReactNative::ReactError{ "EUNSPECIFIED", "EUNSPECIFIED: " + winrt::to_string(ex.message()) + "; " + fileName });
+}
+
+
 
 winrt::fire_and_forget ReactNativeBlobUtil::createFileASCII(
 	std::string path,

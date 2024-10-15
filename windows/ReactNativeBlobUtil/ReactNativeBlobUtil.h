@@ -132,6 +132,17 @@ public:
 		std::string encoding,
 		winrt::Microsoft::ReactNative::ReactPromise<std::string> promise) noexcept;
 
+	// saveAsFile
+	REACT_METHOD(saveAsFile);
+	void saveAsFile(
+		std::string fileName,
+		std::wstring data,
+		std::string encoding,
+		winrt::Microsoft::ReactNative::ReactPromise<int> promise) noexcept;
+
+	REACT_METHOD(checkFileAccessPermissionAndInvoke);
+	winrt::fire_and_forget checkFileAccessPermissionAndInvoke() noexcept;
+
 	REACT_METHOD(createFileASCII);
 	winrt::fire_and_forget createFileASCII(
 		std::string path,

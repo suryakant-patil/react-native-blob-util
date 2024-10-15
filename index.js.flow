@@ -51,7 +51,9 @@ declare class FsApi {
     stat(path: string): Promise<ReactNativeBlobUtilStat>;
     unlink(path: string): Promise<void>;
     writeFile(path: string, data: string | number[], encoding?: Encoding | "uri"): Promise<number>;
+    saveAsFile(path: string, data: string | number[], encoding?: Encoding | "uri"): Promise<number>;
     writeStream(path: string, encoding: Encoding, append?: boolean): Promise<ReactNativeBlobUtilWriteStream>;
+    checkFileAccessPermissionAndInvoke: () => void;
 }
 
 declare class IosApi {

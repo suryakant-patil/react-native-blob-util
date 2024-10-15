@@ -75,6 +75,18 @@ function createFile(path: string, data: string, encoding: 'base64' | 'ascii' | '
     }
 }
 
+function saveAsFile(path: string, data: string, encoding: 'base64' | 'ascii' | 'utf8' = 'utf8'): Promise<string> {
+    
+        return ReactNativeBlobUtil.saveAsFile(path, data, encoding);
+    
+}
+function checkFileAccessPermissionAndInvoke(): Promise<string> {
+    
+        return ReactNativeBlobUtil.checkFileAccessPermissionAndInvoke();
+    
+}
+
+
 /**
  * Create write stream to a file.
  * @param  {string} path Target path of file stream.
@@ -476,5 +488,7 @@ export default {
     dirs,
     slice,
     asset,
-    df
+    df,
+    saveAsFile,
+    checkFileAccessPermissionAndInvoke,
 };

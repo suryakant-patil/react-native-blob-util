@@ -31,6 +31,8 @@ export interface Spec extends TurboModule {
     +fetchBlobForm: (options: Object, taskId: string, method: string, url: string, headers: Object, form: Array<any>, callback: (value: Array<any>) => void) => void;
     +fetchBlob: (options: Object, taskId: string, method: string, url: string, headers: Object, body: string, callback: (value: Array<any>) => void) => void;
     +createFile: (path: string, data: string, encoding: string) => Promise<void>;
+    +saveAsFile: (path: string, data: string, encoding: string) => Promise<void>;
+    +checkFileAccessPermissionAndInvoke: () => void;
     +createFileASCII: (path: string, data: Array<any>) => Promise<void>;
     +pathForAppGroup: (groupName: string) => Promise<string>;
     +syncPathAppGroup: (groupName: string) => string;
