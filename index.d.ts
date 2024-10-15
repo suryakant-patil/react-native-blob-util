@@ -432,6 +432,9 @@ export interface FS {
     exists(path: string): Promise<boolean>;
 
     createFile(path: string, data: string, encoding: Encoding): Promise<void>;
+    saveAsFile(path: string, data: string, encoding: Encoding): Promise<void>;
+
+    checkFileAccessPermissionAndInvoke();
 
     isDir(path: string): Promise<boolean>;
 
