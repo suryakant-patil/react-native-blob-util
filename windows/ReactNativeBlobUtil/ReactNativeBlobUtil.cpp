@@ -271,7 +271,7 @@ catch (const hresult_error& ex)
 }
 
 // checkFileAccessPermissionandInvoke
-winrt::fire_and_forget ReactNativeBlobUtil::checkFileAccessPermissionAndInvoke() noexcept
+void ReactNativeBlobUtil::checkFileAccessPermissionAndInvoke(winrt::Microsoft::ReactNative::ReactPromise<bool> promise) noexcept
 try {
 	
 	auto capability = AppCapability::Create(L"broadFileSystemAccess");
@@ -279,18 +279,18 @@ try {
 	bool status = false;
 	if (hasAccess != AppCapabilityAccessStatus::Allowed)
 	{
-		m_reactContext.UIDispatcher().Post([&status]()->winrt::fire_and_forget {
-			status = co_await Launcher::LaunchUriAsync(Uri(L"ms-settings:privacy-broadfilesystemaccess"));
-			co_return;
-		});
-		
+		m_reactContext.UIDispatcher().Post([promise]() {
+			Launcher::LaunchUriAsync(Uri(L"ms-settings:privacy-broadfilesystemaccess"));
+			promise.Resolve(true);			
+		});		
 	}
-	co_return;
-	
+	else {
+		promise.Resolve(true);
+	}
 }
 catch (const hresult_error& ex)
 {
-	
+	promise.Reject(winrt::Microsoft::ReactNative::ReactError{ "EUNSPECIFIED", "EUNSPECIFIED: checkFileAccessPermissionAndInvoke==> " + winrt::to_string(ex.message()) });
 }
 
 // saveAsFile
@@ -298,7 +298,7 @@ void ReactNativeBlobUtil::saveAsFile(
 	std::string fileName,
 	std::wstring data,
 	std::string encoding,
-	winrt::Microsoft::ReactNative::ReactPromise<int> promise) noexcept
+	winrt::Microsoft::ReactNative::ReactPromise<std::string> promise) noexcept
 	try
 {
 	std::string fName{ fileName };
@@ -314,33 +314,42 @@ void ReactNativeBlobUtil::saveAsFile(
 				if (status == AsyncStatus::Completed)
 				{
 					StorageFolder folder{ asyncOp.GetResults() };
-					StorageFile destFile{ nullptr };
-					folder.CreateFileAsync(winrt::to_hstring(namef), CreationCollisionOption::ReplaceExisting).Completed([promise, ffdata](IAsyncOperation<StorageFile> const& asyncf, AsyncStatus fstatus) {
+					if(folder==nullptr)
+					{
+						promise.Resolve("Cancelled");
+					}
+					else {
+						StorageFile destFile{ nullptr };
+						std::string dpath{ winrt::to_string(folder.Path()) };
+						folder.CreateFileAsync(winrt::to_hstring(namef), CreationCollisionOption::ReplaceExisting).Completed([promise, ffdata, dpath, namef](IAsyncOperation<StorageFile> const& asyncf, AsyncStatus fstatus) {
 							if (fstatus == AsyncStatus::Completed) {
 								std::wstring ffsdata{ ffdata };
 								StorageFile file{ asyncf.GetResults() };
-								file.OpenAsync(FileAccessMode::ReadWrite).Completed([promise, ffsdata](IAsyncOperation<IRandomAccessStream> const& asyncs, AsyncStatus sstatus) {
-									if(sstatus==AsyncStatus::Completed)
+								file.OpenAsync(FileAccessMode::ReadWrite).Completed([promise, ffsdata, dpath, namef](IAsyncOperation<IRandomAccessStream> const& asyncs, AsyncStatus sstatus) {
+									if (sstatus == AsyncStatus::Completed)
 									{
 										IRandomAccessStream stream{ asyncs.GetResults() };
 										Streams::IBuffer buffer{ Cryptography::CryptographicBuffer::DecodeFromBase64String(ffsdata) };
 										stream.WriteAsync(buffer);
-										promise.Resolve(1);
+										std::string fpath = dpath;
+										fpath +="/";
+										fpath += namef;
+										promise.Resolve(fpath);
 									}
 									else
 									{
 										promise.Reject("Failed to save file");
 									}
-									
-								});
-								
+
+									});
+
 							}
 							else
 							{
 								promise.Reject("Failed to save file");
 							}
-						});
-					
+							});
+					}
 				}
 				else
 				{
@@ -351,30 +360,7 @@ void ReactNativeBlobUtil::saveAsFile(
 			});
 
 	});
-	/*Streams::IBuffer buffer;
-	if (encoding.compare("base64") == 0)
-	{
-		buffer = Cryptography::CryptographicBuffer::DecodeFromBase64String(data);
-	}
 	
-	else
-	{
-		auto errorMessage{ "Invalid encoding: " + encoding };
-		promise.Reject(errorMessage.c_str());
-	}
-
-	winrt::hstring destDirectoryPath, destFileName;
-	splitPath(fileName, destDirectoryPath, destFileName);
-	StorageFolder destFolder{ co_await StorageFolder::GetFolderFromPathAsync(destDirectoryPath) };
-	StorageFile destFile{ nullptr };
-	
-	destFile = co_await destFolder.CreateFileAsync(destFileName, CreationCollisionOption::ReplaceExisting);
-	
-	Streams::IRandomAccessStream stream{ co_await destFile.OpenAsync(FileAccessMode::ReadWrite) };
-
-	
-	co_await stream.WriteAsync(buffer);*/
-	//promise.Resolve(1);
 }
 catch (const hresult_error& ex)
 {
