@@ -367,6 +367,60 @@ catch (const hresult_error& ex)
 	promise.Reject(winrt::Microsoft::ReactNative::ReactError{ "EUNSPECIFIED", "EUNSPECIFIED: " + winrt::to_string(ex.message()) + "; " + fileName });
 }
 
+void ReactNativeBlobUtil::saveAsFileWithName(
+    std::string fileName,
+    std::wstring data,
+    std::string encoding,
+    winrt::Microsoft::ReactNative::ReactPromise<std::string> promise) noexcept
+    try
+{
+    std::string fName{ fileName };
+    std::wstring fdata{ data };
+    m_reactContext.UIDispatcher().Post([promise, fName, fdata]() {
+        std::string namef{ fName };
+
+        auto savePicker = FileSavePicker();
+        savePicker.SuggestedStartLocation(PickerLocationId::DocumentsLibrary);
+        //savePicker.FileTypeChoices().Insert(L"Plain Text", single_threaded_vector<hstring>({ L".txt" }));
+        savePicker.SuggestedFileName(fName);
+
+        savePicker.PickSaveFileAsync().Completed([promise, fdata, folder](IAsyncOperation<StorageFile> const& asyncSaveOp, AsyncStatus saveStatus) {
+            if (saveStatus == AsyncStatus::Completed) {
+                StorageFile file{ asyncSaveOp.GetResults() };
+                if (file != nullptr) {
+                    file.OpenAsync(FileAccessMode::ReadWrite).Completed([promise, fdata](IAsyncOperation<IRandomAccessStream> const& asyncStreamOp, AsyncStatus streamStatus) {
+                        if (streamStatus == AsyncStatus::Completed)
+                        {
+                            IRandomAccessStream stream{ asyncStreamOp.GetResults() };
+                            Streams::IBuffer buffer{ Cryptography::CryptographicBuffer::DecodeFromBase64String(fdata) };
+                            stream.WriteAsync(buffer).Completed([promise, file](IAsyncOperationWithProgress<uint32_t, uint32_t> const& writeOp, AsyncStatus writeStatus) {
+                                if (writeStatus == AsyncStatus::Completed)
+                                {
+                                    promise.Resolve(winrt::to_string(file.Path()));
+                                }
+                                else
+                                {
+                                    promise.Reject("Failed to write to file");
+                                }
+                                });
+                        }
+                        else
+                        {
+                            promise.Reject("Failed to open file stream");
+                        }
+                        });
+                }
+            }
+
+        });
+    });
+
+}
+catch (const hresult_error& ex)
+{
+    promise.Reject(winrt::Microsoft::ReactNative::ReactError{ "EUNSPECIFIED", "EUNSPECIFIED: " + winrt::to_string(ex.message()) + "; " + fileName });
+}
+
 
 
 winrt::fire_and_forget ReactNativeBlobUtil::createFileASCII(

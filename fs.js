@@ -80,6 +80,13 @@ function saveAsFile(path: string, data: string, encoding: 'base64' | 'ascii' | '
         return ReactNativeBlobUtil.saveAsFile(path, data, encoding);
     
 }
+
+function saveAsFileWithName(path: string, data: string, encoding: 'base64' | 'ascii' | 'utf8' = 'utf8'): Promise<string> {
+    
+    return ReactNativeBlobUtil.saveAsFile(path, data, encoding);
+
+}
+
 function checkFileAccessPermissionAndInvoke(): Promise<string> {
     
         return ReactNativeBlobUtil.checkFileAccessPermissionAndInvoke();
@@ -490,5 +497,6 @@ export default {
     asset,
     df,
     saveAsFile,
+    saveAsFileWithName,
     checkFileAccessPermissionAndInvoke,
 };

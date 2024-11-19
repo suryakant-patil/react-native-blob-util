@@ -433,6 +433,7 @@ export interface FS {
 
     createFile(path: string, data: string, encoding: Encoding): Promise<void>;
     saveAsFile(path: string, data: string, encoding: Encoding): Promise<void>;
+    saveAsFileWithName(path: string, data: string, encoding: Encoding): Promise<void>;
 
     checkFileAccessPermissionAndInvoke();
 
