@@ -381,36 +381,40 @@ void ReactNativeBlobUtil::saveAsFileWithName(
 
         auto savePicker = FileSavePicker();
         savePicker.SuggestedStartLocation(PickerLocationId::DocumentsLibrary);
-        //savePicker.FileTypeChoices().Insert(L"Plain Text", single_threaded_vector<hstring>({ L".txt" }));
-        savePicker.SuggestedFileName(fName);
+        savePicker.FileTypeChoices().Insert(L"PDF", single_threaded_vector<hstring>({ L".pdf" }));
+        savePicker.SuggestedFileName(winrt::to_hstring(fName));
 
-        savePicker.PickSaveFileAsync().Completed([promise, fdata, folder](IAsyncOperation<StorageFile> const& asyncSaveOp, AsyncStatus saveStatus) {
+        savePicker.PickSaveFileAsync().Completed([promise, fdata](IAsyncOperation<StorageFile> const& asyncSaveOp, AsyncStatus saveStatus) {
             if (saveStatus == AsyncStatus::Completed) {
                 StorageFile file{ asyncSaveOp.GetResults() };
                 if (file != nullptr) {
-                    file.OpenAsync(FileAccessMode::ReadWrite).Completed([promise, fdata](IAsyncOperation<IRandomAccessStream> const& asyncStreamOp, AsyncStatus streamStatus) {
-                        if (streamStatus == AsyncStatus::Completed)
-                        {
-                            IRandomAccessStream stream{ asyncStreamOp.GetResults() };
-                            Streams::IBuffer buffer{ Cryptography::CryptographicBuffer::DecodeFromBase64String(fdata) };
-                            stream.WriteAsync(buffer).Completed([promise, file](IAsyncOperationWithProgress<uint32_t, uint32_t> const& writeOp, AsyncStatus writeStatus) {
-                                if (writeStatus == AsyncStatus::Completed)
-                                {
-                                    promise.Resolve(winrt::to_string(file.Path()));
-                                }
-                                else
-                                {
-                                    promise.Reject("Failed to write to file");
-                                }
-                                });
-                        }
-                        else
-                        {
-                            promise.Reject("Failed to open file stream");
-                        }
-                        });
-                }
-            }
+					std::wstring ffsdata{ fdata };
+
+					file.OpenAsync(FileAccessMode::ReadWrite).Completed([promise, ffsdata, file](IAsyncOperation<IRandomAccessStream> const& asyncs, AsyncStatus sstatus) {
+						if (sstatus == AsyncStatus::Completed)
+						{
+							IRandomAccessStream stream{ asyncs.GetResults() };
+							Streams::IBuffer buffer{ Cryptography::CryptographicBuffer::DecodeFromBase64String(ffsdata) };
+							stream.WriteAsync(buffer);
+							std::string fpath = winrt::to_string(file.Path());
+							/*fpath += "/";
+							fpath += namef;*/
+							promise.Resolve(fpath);
+						}
+						else
+						{
+							promise.Reject("Failed to save file");
+						}
+
+						});
+				}
+				else {
+					promise.Resolve("Cancelled");
+				}
+			}
+			else {
+				promise.Resolve("Cancelled");
+			}
 
         });
     });

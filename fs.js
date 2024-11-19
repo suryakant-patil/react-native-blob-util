@@ -83,7 +83,7 @@ function saveAsFile(path: string, data: string, encoding: 'base64' | 'ascii' | '
 
 function saveAsFileWithName(path: string, data: string, encoding: 'base64' | 'ascii' | 'utf8' = 'utf8'): Promise<string> {
     
-    return ReactNativeBlobUtil.saveAsFile(path, data, encoding);
+    return ReactNativeBlobUtil.saveAsFileWithName(path, data, encoding);
 
 }
 
