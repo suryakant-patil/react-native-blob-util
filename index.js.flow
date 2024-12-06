@@ -39,6 +39,7 @@ declare class FsApi {
     hash(path: string, algorithm: HashAlgorithm): Promise<string>;
     isDir(path: string): Promise<boolean>;
     ls(path: string): Promise<string[]>;
+    cleanTempFiles(path: string): Promise<string[]>;
     lstat(path: string): Promise<ReactNativeBlobUtilStat[]>;
     mkdir(path: string): Promise<boolean>;
     mv(path: string, dest: string): Promise<boolean>;

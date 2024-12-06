@@ -29,7 +29,8 @@ const {
     ls,
     isDir,
     mv,
-    cp
+    cp,
+    cleanTempFiles,
 } = fs;
 
 const Blob = polyfill.Blob;

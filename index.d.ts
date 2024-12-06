@@ -435,6 +435,8 @@ export interface FS {
     saveAsFile(path: string, data: string, encoding: Encoding): Promise<void>;
     saveAsFileWithName(path: string, data: string, encoding: Encoding): Promise<void>;
 
+    cleanTempFiles(path: string): Promise<string[]>;
+
     checkFileAccessPermissionAndInvoke();
 
     isDir(path: string): Promise<boolean>;

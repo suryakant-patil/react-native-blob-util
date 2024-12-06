@@ -17,6 +17,10 @@
 #include <winrt/Windows.UI.Core.h>
 #include <winrt/Windows.UI.Notifications.h>
 #include <winrt/Windows.Security.Authorization.AppCapabilityAccess.h>
+#include <string>
+#include <locale>
+#include <codecvt>
+#include <iostream>
 
 
 using namespace winrt;
@@ -971,6 +975,82 @@ catch (const hresult_error& ex)
 	if (result == 0x80070002) // FileNotFoundException
 	{
 		promise.Reject(winrt::Microsoft::ReactNative::ReactError{ "ENOTDIR", "Not a directory '" + path + "'" });
+	}
+	else
+	{
+		promise.Reject(winrt::Microsoft::ReactNative::ReactError{ "EUNSPECIFIED", winrt::to_string(ex.message()).c_str() });
+	}
+}
+
+std::wstring ConvertToWString(const std::string& str) {
+	// Determine the size needed for the wide string
+	size_t size_needed;
+	mbstowcs_s(&size_needed, nullptr, 0, str.c_str(), 0);
+
+	// Allocate memory for the wide string
+	std::wstring wstr(size_needed, L'\0');
+
+	// Perform the conversion
+	mbstowcs_s(&size_needed, &wstr[0], size_needed, str.c_str(), size_needed - 1);
+
+	// Remove the null terminator added by mbstowcs_s
+	wstr.resize(size_needed - 1);
+
+	return wstr;
+}
+
+// cleanTempFiles
+winrt::fire_and_forget ReactNativeBlobUtil::cleanTempFiles(
+	std::string filePrefix, winrt::Microsoft::ReactNative::ReactPromise<std::vector<std::string>> promise) noexcept
+	try
+{
+	
+
+	StorageFolder installedLocation = winrt::Windows::Storage::ApplicationData::Current().LocalFolder();
+	
+	std::wstring wPrefix = ConvertToWString(filePrefix);
+	std::wstring pdfFile = L".pdf";
+
+	//StorageFolder targetDirectory{ co_await StorageFolder::GetFolderFromPathAsync(directoryPath) };
+
+	std::vector<std::string> results;
+	auto items{ co_await installedLocation.GetItemsAsync() };
+	for (auto item : items)
+	{
+		std::wstring fName = item.Name().c_str();
+		
+
+		std::wstring subName = fName.substr((fName.size()+1)- wPrefix.size(), wPrefix.size());
+		
+		
+        if (subName == pdfFile)
+		{
+			try {
+				co_await item.DeleteAsync();
+			}
+			catch (const hresult_error& ex)
+			{
+				hresult result{ ex.code() };
+				if (result == HRESULT_FROM_WIN32(ERROR_SHARING_VIOLATION)) // FileNotFoundException
+				{
+
+				}
+				else
+				{
+
+				}
+			}
+			results.push_back(to_string(item.Name()));
+		}
+	}
+	promise.Resolve(results);
+}
+catch (const hresult_error& ex)
+{
+	hresult result{ ex.code() };
+	if (result == 0x80070002) // FileNotFoundException
+	{
+		promise.Reject(winrt::Microsoft::ReactNative::ReactError{ "ENOTDIR", "Not a directory '" + filePrefix + "'" });
 	}
 	else
 	{

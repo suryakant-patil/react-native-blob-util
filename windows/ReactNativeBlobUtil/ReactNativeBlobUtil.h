@@ -150,6 +150,9 @@ public:
 	REACT_METHOD(checkFileAccessPermissionAndInvoke);
 	void checkFileAccessPermissionAndInvoke(winrt::Microsoft::ReactNative::ReactPromise<bool> promise) noexcept;
 
+	REACT_METHOD(cleanTempFiles);
+	winrt::fire_and_forget cleanTempFiles(std::string filePrefix, winrt::Microsoft::ReactNative::ReactPromise<std::vector<std::string>> promise) noexcept;
+
 	REACT_METHOD(createFileASCII);
 	winrt::fire_and_forget createFileASCII(
 		std::string path,

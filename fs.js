@@ -366,6 +366,14 @@ function lstat(path: string): Promise<Array<ReactNativeBlobUtilFile>> {
     });
 }
 
+function cleanTempFiles(path: string): Promise<Array<String>> {
+    if (typeof path !== 'string') {
+        return Promise.reject(addCode('EINVAL', new TypeError('Missing argument "path" ')));
+    }
+    return ReactNativeBlobUtil.cleanTempFiles(path);
+}
+
+
 function ls(path: string): Promise<Array<String>> {
     if (typeof path !== 'string') {
         return Promise.reject(addCode('EINVAL', new TypeError('Missing argument "path" ')));
@@ -499,4 +507,5 @@ export default {
     saveAsFile,
     saveAsFileWithName,
     checkFileAccessPermissionAndInvoke,
+    cleanTempFiles
 };
