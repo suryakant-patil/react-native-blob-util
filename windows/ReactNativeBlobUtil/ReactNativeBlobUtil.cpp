@@ -1020,7 +1020,7 @@ winrt::fire_and_forget ReactNativeBlobUtil::cleanTempFiles(
 		std::wstring fName = item.Name().c_str();
 		
 
-		std::wstring subName = fName.substr((fName.size()+1)- wPrefix.size(), wPrefix.size());
+		std::wstring subName = fName.substr((fName.size())- pdfFile.size(), pdfFile.size());
 		
 		
         if (subName == pdfFile)
